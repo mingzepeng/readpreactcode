@@ -6,3 +6,5 @@
 /.idea
 yarn.lock
 /.vscode
+/*.vsdx
+/*.~vsdx
