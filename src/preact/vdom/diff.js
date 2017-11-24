@@ -188,6 +188,7 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {
 		j, c, f, vchild, child;
 
 	// Build up a map of keyed children and an Array of unkeyed children:
+	// 建立 key => vnode 的字典对象 keyed ， 没有 key 的数组对象 children
 	if (len!==0) {
 		let i 
 		for (i=0; i<len; i++) {
@@ -207,12 +208,14 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {
 
 	if (vlen!==0) {
 		// 循环 虚拟 dom 的子元素(列表)
+		//如果有 k 存在，children update  diff  的效率为 o(n)
+		//如果 k 不存在，diff 的效率可能为 o(n) ，或者 o(n^2)
 		for (var i=0; i<vlen; i++) {
 			vchild = vchildren[i];
 			child = null;
 
 			// attempt to find a node based on key matching
-			// 首先找到一个 key ，同时都存在即将更新和已存在的children中
+			// 根据 vchild 的 key 查找 dom children 中相同 key 的child
 			let key = vchild.key;
 			if (key!=null) {
 				if (keyedLen && keyed[key]!==undefined) {
@@ -239,38 +242,43 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {
 
 			// morph the matched/found/created DOM child to match vchild (deep)
 			// diff 当前的 child 和 vchild ,递归操作
-			// 首次生成:此处会生成父元素下的子元素
-			// 在新增一个节点,此时新生成一个,随后执行下面代码的 @3
+			// 首次生成或者 child 不存在，则生成一个
 			child = idiff(child, vchild, context, mountAll);
 
 			//如果是首次生成,则 originalChildren 为空集合, f 为 undefined
 			f = originalChildren[i];  
 			
-			// 如果不进入这个 if, 说明 child 和 f 是同一个节点，此时已经对 f 的属性进行了更新
-			// 进入这个if 说明 diff 后的新节点和已有的节点非同一个节点
+			// 这个 if 快里的代码,我感觉是整个库中最精妙的地方,可以实现 dom 的新增、非连续移除、顺序变换
+			
+
+			// 如果不进入这个 if, 说明 child 和 f 是同一个节点，不必处理
+			// 进入这个if 说明 diff 后的新节点和originalChildren[i] 并非同一个节点
 			if (child && child!==dom && child!==f) {
 				if (f==null) {
 					// @1
-					//新增节点
-					//首次生成的话,会把 子元素添加到父元素里
+					//新增节点，情形包括 mount阶段的首次生成、update 的末尾添加
 					dom.appendChild(child);
 				}
 				else if (child===f.nextSibling) {
 					//@2
-					//删除节点
-					//相邻两个顺序颠倒，如 a,b => b,a 移除a，在下一轮就把a添加到b后面元素的前面，即添加到 b 的后面，实现位置互换
+					//移除节点,并非删除
+
+					//相邻两个顺序颠倒，如 <a/><b/> => <b/><a/> ，则此操作先移除a，在下一轮就把a添加到b后面元素的前面，即添加到 b 的后面，实现位置互换
+					//移除在此处比较特殊、只会移除非连续的单个节点,如 <a1/><a2/><a3/> => <a1/><a2/>,  <a1/><a2/><a3/><a4/> => <a1/><a3/>
+					// 如果不移除的是多个连续的，则在下面批量移除的时候进行
 					removeNode(f);
 				}
 				else {
 					//@3 
-					// update 阶段,新增节点
-					// 变换顺序之1:把末尾的放到首位
+					// update 阶段,情形包括 首位添加 顺序变换
+					// 顺序变换:把末尾的放到首位
 					dom.insertBefore(child, f);
 				}
 			}
 		}
 	}
 
+	//删除节点
 
 	// remove unused keyed children:
 	if (keyedLen) {

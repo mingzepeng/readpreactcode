@@ -17,6 +17,10 @@ export default class App extends Component {
 		this.currentUrl = e.url;
 	};
 
+	componentDidUpdate(){
+		i++
+	}
+
 	componentDidMount(){
 		i++
 		document.addEventListener('click',()=>{
@@ -25,16 +29,17 @@ export default class App extends Component {
 	}
 
 	render() {
-		let children = i == 0 ? [<div key="1" >1</div>,
+		let children = i % 2 === 0 ? [<div key="1" >1</div>,
 			<div key="2">2</div>,
 			<div key="3">3</div>,
 			<div key="4">4</div>] : [<div key="2">2</div>,
 				<div key="1">1</div>,
 				<div key="3">3</div>,
 				<div key="4">4</div>]
+		let children2 = i % 2 === 0 ? [<div>hello</div>,'world'] : ['hello']
 		return (
 			<C>
-			{children}
+			{children2}
 			</C>
 		);
 	}
