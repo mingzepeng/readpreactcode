@@ -20,6 +20,10 @@ preact 的 diff 机制和 react 有所不同， preact 的一次 diff 过程只�
 
 在更新的过程中，preact 会对一些情景做单独的优化，提高运行效率。
 
+#### h 函数对children优化
+
+多个文本 child 会解析成一个 child 
+
 #### 本文节点优化
 
 更新元素且只包含单个 文本 节点的情况下,只改变单个文本节点的值,如  <div>foo</div>  =>  <div>bar</div>
@@ -49,6 +53,14 @@ for (j=min; j<childrenLen; j++) {
     }
 }
 ```
+
+
+### 元素 diff 算法
+
+### 属性 diff 算法
+
+
+### 组件 diff 算法
 
 ### 数组 diff 算法
 

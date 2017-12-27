@@ -253,6 +253,15 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {
 
 			// 如果不进入这个 if, 说明 child 和 f 是同一个节点，不必处理
 			// 进入这个if 说明 diff 后的新节点和originalChildren[i] 并非同一个节点
+
+			//相邻两个顺序颠倒1，如 <a/><b/>=> <b/><a/> 
+			//第一轮 旧a 和 新b 进行比较, 新b===旧a.nextSibling 进入条件 @2 移除原先的 a
+			//在第二轮 新a 和 null 进行比较,进入条件@1 把新的a添加到 旧b 的后面
+			
+			//相邻两个顺序颠倒2，如 <a/><b/><c /> => <b/><a/><c/> 
+			//第一轮 旧a 和 新b 进行比较, 新b===旧a.nextSibling 进入条件 @2 移除原先的 a
+			//第二轮 新的 a 和 旧c 进行比较,进入条件 @3 ,把 新a 放到 旧c 的前面,此处已经实现顺序互换
+			//第三轮 新c 和 旧c 比较,不会进入这个条件
 			if (child && child!==dom && child!==f) {
 				if (f==null) {
 					// @1
@@ -261,17 +270,18 @@ function innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {
 				}
 				else if (child===f.nextSibling) {
 					//@2
-					//移除节点,并非删除
-
-					//相邻两个顺序颠倒，如 <a/><b/> => <b/><a/> ，则此操作先移除a，在下一轮就把a添加到b后面元素的前面，即添加到 b 的后面，实现位置互换
-					//移除在此处比较特殊、只会移除非连续的单个节点,如 <a1/><a2/><a3/> => <a1/><a2/>,  <a1/><a2/><a3/><a4/> => <a1/><a3/>
-					// 如果不移除的是多个连续的，则在下面批量移除的时候进行
+					//移除,并非删除
+					
+					//实现节点移除和顺序交换
+					//移除是在新节点遍历完成的这段时间内,对旧的且不存在的节点进行移除,新节点遍历完后,还剩余没删除的,则在最下面统一删除
+					// 如 <a/><b/><c /> => <a/><c/> 
+					// 如 <a/><b/><c /><d /><e /> => <a/><c/><e />
+					// 上述两种情况此处均可移除 
 					removeNode(f);
 				}
 				else {
 					//@3 
-					// update 阶段,情形包括 首位添加 顺序变换
-					// 顺序变换:把末尾的放到首位
+					// update 阶段,情形包括 首位添加
 					dom.insertBefore(child, f);
 				}
 			}
